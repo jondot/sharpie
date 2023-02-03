@@ -6,8 +6,8 @@ edition = "2021"
 
 description = "A simple digital signing and verification library based on ring"
 authors = ["Dotan Nahum <dotan@rng0.io>"]
-documentation = "https://docs.rs/sign-rs/"
-repository = "https://github.com/jondot/sign-rs"
+documentation = "https://docs.rs/sharpie/"
+repository = "https://github.com/jondot/sharpie"
 keywords = ["RSA", "Ed25519", "signature", "sign", "ring"]
 license = "Apache-2.0"
 readme = "../README.md"
