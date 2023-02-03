@@ -1,0 +1,7 @@
+const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+const here = (p)=>path.join(__dirname, p)
+const key = crypto.createPublicKey(fs.readFileSync(here('./ed.public.pem')).toString())
+const sig = crypto.verify(null,fs.readFileSync(here("./sign-me.txt")), key,fs.readFileSync(here('./ed.sign-me.txt.ring-sig')))
+console.log(`Result: ${sig ? "OK": "FAIL"}`)

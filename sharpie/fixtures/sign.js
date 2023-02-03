@@ -1,0 +1,8 @@
+const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+const here = (p)=>path.join(__dirname, p)
+const key = crypto.createPrivateKey(fs.readFileSync(here('./ed.private.pem')).toString())
+const sig = crypto.sign(null, fs.readFileSync(here('./sign-me.txt')), key)
+fs.writeFileSync(here("ed.sign-me.txt.nodejs-sig"), sig)
+console.log("wrote signature")

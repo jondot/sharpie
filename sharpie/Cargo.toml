@@ -1,0 +1,23 @@
+[package]
+name = "sharpie"
+version = "0.1.0"
+edition = "2021"
+
+
+description = "A simple digital signing and verification library based on ring"
+authors = ["Dotan Nahum <dotan@rng0.io>"]
+documentation = "https://docs.rs/sign-rs/"
+repository = "https://github.com/jondot/sign-rs"
+keywords = ["RSA", "Ed25519", "signature", "sign", "ring"]
+license = "Apache-2.0"
+readme = "../README.md"
+
+[dependencies]
+ring = { version = "0.16.20", features = ["std"] }
+thiserror = "1.0.38"
+pem = "1.1.1"
+snafu = "0.7.4"
+
+[dev-dependencies]
+base64 = "0.21.0"
+anyhow = "1.0.68"
