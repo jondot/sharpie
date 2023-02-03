@@ -1,6 +1,6 @@
 [package]
 name = "sharpie"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 
@@ -14,7 +14,6 @@ readme = "../README.md"
 
 [dependencies]
 ring = { version = "0.16.20", features = ["std"] }
-thiserror = "1.0.38"
 pem = "1.1.1"
 snafu = "0.7.4"
 
