@@ -12,7 +12,7 @@ This is a Rust library for signing and verifying digital signatures using _RSA_ 
 
 ```toml
 [dependencies]
-sharpie = "0.1.0"
+sharpie = "0.1.2"
 ```
 
 For most recent version see [crates.io](https://crates.io/crates/sharpie)
