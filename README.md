@@ -6,7 +6,7 @@ sharpie
 [<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-sharpie-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/sharpie)
 [<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/jondot/sharpie/build.yml?branch=master&style=for-the-badge" height="20">](https://github.com/jondot/sharpie/actions?query=branch%3Amaster)
 
-This is a Rust library that ...
+This is a Rust library for signing and verifying digital signatures using _RSA_ or _ED25519_.
 
 ## Dependency
 
