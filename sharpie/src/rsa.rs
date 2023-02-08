@@ -88,7 +88,7 @@ pub enum PublicKeyBytes {
 /// # Errors
 ///
 /// This function will return an error if verification failed
-pub fn verify(msg: &[u8], sig: &[u8], pubkey: PublicKeyBytes) -> crate::Result<()> {
+pub fn verify(msg: &[u8], sig: &[u8], pubkey: &PublicKeyBytes) -> crate::Result<()> {
     let PublicKeyBytes::Raw(key_bytes) = pubkey;
     // Verify the signature.
     let public_key =
@@ -122,6 +122,32 @@ pub fn sign(msg: &[u8], privkey: &PrivateKeyBytes) -> crate::Result<Vec<u8>> {
     Ok(sig)
 }
 
+/// Sign and return a base64 encoded signature
+///
+/// # Errors
+///
+/// This function will return an error if signing failed
+#[cfg(feature = "base64")]
+pub fn sign_base64(msg: &[u8], privkey: &PrivateKeyBytes) -> crate::Result<String> {
+    use base64::{prelude::BASE64_STANDARD, Engine};
+    let sig = sign(msg, privkey)?;
+    Ok(BASE64_STANDARD.encode(sig))
+}
+
+/// Verify where the signature is base64 encoded
+///
+/// # Errors
+///
+/// This function will return an error if verify failed
+#[cfg(feature = "base64")]
+pub fn verify_base64(msg: &[u8], sig: &str, pubkey: &PublicKeyBytes) -> crate::Result<()> {
+    use base64::{prelude::BASE64_STANDARD, Engine};
+    let sig = BASE64_STANDARD
+        .decode(sig)
+        .context(crate::DecodeFailedSnafu)?;
+    verify(msg, &sig, pubkey)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -140,7 +166,7 @@ mod tests {
         )
         .read()
         .unwrap();
-        verify(b"hello world_", &sig, pubkey).expect_err("should fail");
+        verify(b"hello world_", &sig, &pubkey).expect_err("should fail");
 
         // wrong key
         let pubkey = PublicKey::PEM(
@@ -148,13 +174,13 @@ mod tests {
         )
         .read()
         .unwrap();
-        verify(b"hello world", &sig, pubkey).expect_err("should fail");
+        verify(b"hello world", &sig, &pubkey).expect_err("should fail");
 
         // wrong format
         let pubkey = PublicKey::DER(fs::read("fixtures/rsa.public.pem").unwrap())
             .read()
             .unwrap();
-        verify(b"hello world", &sig, pubkey).expect_err("should fail");
+        verify(b"hello world", &sig, &pubkey).expect_err("should fail");
     }
 
     #[test]
@@ -170,7 +196,24 @@ mod tests {
         )
         .read()
         .unwrap();
-        verify(b"hello world", &sig, pubkey).expect("should verify");
+        verify(b"hello world", &sig, &pubkey).expect("should verify");
+    }
+
+    #[cfg(feature = "base64")]
+    #[test]
+    fn test_base64() {
+        let privkey = PrivateKey::PEM(
+            String::from_utf8_lossy(&fs::read("fixtures/rsa.private.pem").unwrap()).to_string(),
+        )
+        .read()
+        .unwrap();
+        let sig = sign_base64(b"hello world", &privkey).expect("should sign");
+        let pubkey = PublicKey::PEM(
+            String::from_utf8_lossy(&fs::read("fixtures/rsa.public.pem").unwrap()).to_string(),
+        )
+        .read()
+        .unwrap();
+        verify_base64(b"hello world", &sig, &pubkey).expect("should verify");
     }
 
     #[test]
@@ -186,7 +229,7 @@ mod tests {
         )
         .read()
         .unwrap();
-        verify(b"hello world", &sig, pubkey).expect("should verify");
+        verify(b"hello world", &sig, &pubkey).expect("should verify");
     }
 
     #[test]
@@ -198,7 +241,7 @@ mod tests {
         let pubkey = PublicKey::DER(fs::read("fixtures/rsa.public.der.pk8").unwrap())
             .read()
             .unwrap();
-        verify(b"hello world", &sig, pubkey).expect("should verify");
+        verify(b"hello world", &sig, &pubkey).expect("should verify");
     }
 
     #[test]
@@ -210,7 +253,7 @@ mod tests {
         .read()
         .unwrap();
         let msg = fs::read("fixtures/sign-me.txt").expect("file should exist");
-        verify(&msg, &sig, pubkey).expect("should verify");
+        verify(&msg, &sig, &pubkey).expect("should verify");
     }
 
     #[test]

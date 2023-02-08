@@ -48,7 +48,12 @@ pub enum PublicKey {
 }
 
 impl PublicKey {
-    fn read(&self) -> crate::Result<PublicKeyBytes> {
+    /// Reads a [`PublicKey`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if decoding fails
+    pub fn read(&self) -> crate::Result<PublicKeyBytes> {
         Ok(PublicKeyBytes::Raw(match self {
             Self::PEM(s) => {
                 let p = pem::parse(s).context(crate::InvalidPemSnafu)?;
@@ -71,11 +76,11 @@ pub enum PublicKeyBytes {
 /// # Errors
 ///
 /// This function will return an error if verify failed
-pub fn verify(msg: &[u8], sig: &[u8], pubkey: &PublicKey) -> crate::Result<()> {
+pub fn verify(msg: &[u8], sig: &[u8], pubkey: &PublicKeyBytes) -> crate::Result<()> {
     // ASN.1 encoding for ed25519 always has a 12 byte header which we cut off to get
     // to the raw key
     // see https://mta.openssl.org/pipermail/openssl-users/2018-March/007777.html
-    let PublicKeyBytes::Raw(key_bytes) = pubkey.read()?;
+    let PublicKeyBytes::Raw(key_bytes) = pubkey;
 
     let peer_public_key = signature::UnparsedPublicKey::new(&signature::ED25519, &key_bytes);
     peer_public_key
@@ -104,6 +109,32 @@ pub fn sign(msg: &[u8], prkey: &PrivateKeyBytes) -> crate::Result<Vec<u8>> {
     Ok(sig.as_ref().to_vec())
 }
 
+/// Sign a message using ED25519 and encode as base64
+///
+/// # Errors
+///
+/// This function will return an error if signing failed
+#[cfg(feature = "base64")]
+pub fn sign_base64(msg: &[u8], privkey: &PrivateKeyBytes) -> crate::Result<String> {
+    use base64::{prelude::BASE64_STANDARD, Engine};
+    let sig = sign(msg, privkey)?;
+    Ok(BASE64_STANDARD.encode(sig))
+}
+
+/// Verify an ED25519 signature, where the signature is base64 encoded
+///
+/// # Errors
+///
+/// This function will return an error if verify failed
+#[cfg(feature = "base64")]
+pub fn verify_base64(msg: &[u8], sig: &str, pubkey: &PublicKeyBytes) -> crate::Result<()> {
+    use base64::{prelude::BASE64_STANDARD, Engine};
+    let sig = BASE64_STANDARD
+        .decode(sig)
+        .context(crate::DecodeFailedSnafu)?;
+    verify(msg, &sig, pubkey)
+}
+
 #[cfg(test)]
 mod tests {
     use ring::{rand, signature::KeyPair};
@@ -123,17 +154,17 @@ mod tests {
             String::from_utf8_lossy(&fs::read("fixtures/ed.public.pem").unwrap()).to_string(),
         );
 
-        verify(b"hello world_", &sig, &pubkey).expect_err("should fail");
+        verify(b"hello world_", &sig, &pubkey.read().unwrap()).expect_err("should fail");
 
         // wrong key
         let pubkey = PublicKey::PEM(
             String::from_utf8_lossy(&fs::read("fixtures/rsa.public.pem").unwrap()).to_string(),
         );
-        verify(b"hello world", &sig, &pubkey).expect_err("should fail");
+        verify(b"hello world", &sig, &pubkey.read().unwrap()).expect_err("should fail");
 
         // wrong format
         let pubkey = PublicKey::DER(fs::read("fixtures/ed.public.pem").unwrap());
-        verify(b"hello world", &sig, &pubkey).expect_err("should fail");
+        verify(b"hello world", &sig, &pubkey.read().unwrap()).expect_err("should fail");
     }
 
     #[test]
@@ -147,7 +178,22 @@ mod tests {
         let pubkey = PublicKey::PEM(
             String::from_utf8_lossy(&fs::read("fixtures/ed.public.pem").unwrap()).to_string(),
         );
-        verify(b"hello world", &sig, &pubkey).expect("should verify");
+        verify(b"hello world", &sig, &pubkey.read().unwrap()).expect("should verify");
+    }
+
+    #[cfg(feature = "base64")]
+    #[test]
+    fn test_base64() {
+        let privkey = PrivateKey::PEM(
+            String::from_utf8_lossy(&fs::read("fixtures/ed.private.pem").unwrap()).to_string(),
+        )
+        .read()
+        .unwrap();
+        let sig = sign_base64(b"hello world", &privkey).expect("should sign");
+        let pubkey = PublicKey::PEM(
+            String::from_utf8_lossy(&fs::read("fixtures/ed.public.pem").unwrap()).to_string(),
+        );
+        verify_base64(b"hello world", &sig, &pubkey.read().unwrap()).expect("should verify");
     }
 
     #[test]
@@ -166,7 +212,7 @@ mod tests {
         )
         .expect("should sign");
         let pubkey = PublicKey::Raw(key_pair.public_key().as_ref().to_vec());
-        verify(b"hello world", &sig, &pubkey).expect("should verify");
+        verify(b"hello world", &sig, &pubkey.read().unwrap()).expect("should verify");
     }
 
     #[test]
@@ -176,7 +222,7 @@ mod tests {
             String::from_utf8_lossy(&fs::read("fixtures/ed.public.pem").unwrap()).to_string(),
         );
         let msg = fs::read("fixtures/sign-me.txt").expect("file should exist");
-        verify(&msg, &sig, &pubkey).expect("should verify");
+        verify(&msg, &sig, &pubkey.read().unwrap()).expect("should verify");
     }
 
     #[test]

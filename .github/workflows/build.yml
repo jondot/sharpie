@@ -50,10 +50,12 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
 
-      - name: Run cargo test
+      - name: Run xtask powerset test
         uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: xtask
+          args: powerset
+          
 
   coverage:
     name: Coverage

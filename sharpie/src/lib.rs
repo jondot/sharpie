@@ -43,6 +43,9 @@ pub enum Error {
     InvalidPem { source: pem::PemError },
     #[snafu(display("Signature operation failed"))]
     SignatureFailed { source: ring::error::Unspecified },
+    #[cfg(feature = "base64")]
+    #[snafu(display("Decoding data failed"))]
+    DecodeFailed { source: base64::DecodeError },
     #[snafu(display("Cannot read key: {}", source))]
     InvalidKey { source: ring::error::KeyRejected },
 }
